@@ -5,8 +5,9 @@ class Play extends Phaser.Scene {
 
     preload() {
         this.load.image('runner', './assets/runner.png');
-        this.load.image('floor', './assets/floor.png');
+        this.load.image('floor', '../assets/floor.png');
         this.load.image('hurdle', './assets/hurdle.png');
+        this.load.image('killHurdle', '../assets/killHurdle.png');
     }
 
     create() {
@@ -20,6 +21,11 @@ class Play extends Phaser.Scene {
         this.jumpSpeed = -600;
         this.scrollSpeed = 4;
         this.scrollSpeedCap = this.scrollSpeed * 3;
+        this.scrollDeathSpeed = this.scrollSpeedCap / 2.5; //Anthony//
+        this.canDie = false; //Anthony//
+        this.initInvuln = 10000; // Anthony//
+        this.time.delayedCall(this.initInvuln, () => { this.canDie = true;}); //Anthony//
+        
 
         /* River variable settings:
          * 0 = Acheron
@@ -79,13 +85,19 @@ class Play extends Phaser.Scene {
         this.hurdleGroup = this.add.group({
             runChildUpdate: true
         })
-
+        this.hurdleKillGroup = this.add.group({
+            runChildUpdate: true
+        });
         this.time.delayedCall(1500, () => { 
             this.addHurdle(); 
+            this.time.delayedCall(1500, () => {
+                this.addKillHurdle();
+            });
         });
         
         this.bushwhack = this.physics.add.collider(this.runner, this.hurdleGroup);
         this.physics.add.collider(this.hurdleGroup, this.ground);
+        this.physics.add.collider(this.hurdleKillGroup, this.ground);
         this.gameOver = false;
         this.distTimer = 0;
 
@@ -98,7 +110,11 @@ class Play extends Phaser.Scene {
         hurdle.setGravityY(0);
         this.hurdleGroup.add(hurdle);
     }
-
+    addKillHurdle() {
+        let killHurdle = new KillHurdle(this, -this.scrollSpeed * 30, 'killHurdle');
+        killHurdle.setGravityY(0);
+        this.hurdleKillGroup.add(killHurdle);
+    }
     ifuckinghatephaser3rightaboutnow(runner){
         runner.setVelocityX(0);
     }
@@ -133,7 +149,11 @@ class Play extends Phaser.Scene {
             this.scrollSpeed = this.scrollSpeedCap / 3;
         }
     }
-
+    killHurdleCollision(killHurdle){
+        killHurdle.destroyed = true;
+        killHurdle.destroy();
+        this.gameOver = true;
+    }
     // Triggers when player fails to jump over long-jump
     jumpCollision() {
         this.scrollSpeed = 0;
@@ -175,20 +195,23 @@ class Play extends Phaser.Scene {
         // short-hop vs long-jump is main decision
         // Speed determines if long-jumps are passable
         this.timer -= delta;
-        if(this.gameOver){ // Dead :(
+        if(this.gameOver & this.canDie){ // Dead :(
             // oh shit he dead
             this.time.delayedCall(2000, () => { this.scene.start('gameOverScene'); });
         }
         else{ // Not dead yet, poggers
-            if(this.scrollSpeed < this.scrollSpeedCap / 2){
-                this.timer += delta * 2;
-                if(this.timer > 10){
-                    this.hadesVibeCheck(); // You're too slow!
-                }
+            if(this.scrollSpeed < this.scrollDeathSpeed & this.canDie){
+                console.log ('gameOverScene')
+                this.gameOver = true;
+                // this.timer += delta * 2;
+                // if(this.timer > 10){
+                //     this.hadesVibeCheck(); // You're too slow!
+                // }
             }
             this.floor.tilePositionX += this.scrollSpeed / 2;
             this.groundScroll.tilePositionX += this.scrollSpeed;
             this.physics.world.collide(this.hurdleGroup, this.runner, this.hurdleCollision, null, this);
+            this.physics.world.collide(this.hurdleKillGroup, this.runner, this.killHurdleCollision, null, this);
             if(this.runner.x < 100){
                 this.runner.x = 200;
                 this.ifuckinghatephaser3rightaboutnow(this.runner); // I dont know why i cant just
@@ -252,6 +275,8 @@ class Play extends Phaser.Scene {
 
             }
         }
-        
+        if(!this.canDie) {
+            this.gameOver = false;
+        }     
     }
 }

@@ -23,7 +23,7 @@ class Menu extends Phaser.Scene {
     }
     // menu text-Anthony//
     this.add.text(game.config.width/2, game.config.height/2 - borderUISize - borderPadding, 
-        'Untitled Ancient Greek Myths Themed Endless Runner', menuConfig).setOrigin(0.5);
+        'Obstaclese', menuConfig).setOrigin(0.5);
               this.add.text(game.config.width/2, game.config.height/2, 
         'Controls: SPACE = JUMP', menuConfig).setOrigin(0.5);
               menuConfig.backgroundColor = '#1C6728';
